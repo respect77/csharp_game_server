@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # 애플리케이션 서비스
+  server-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: server-app
+    ports:
+      - "8080:8080" # API 서버 HTTP
+      - "443:443"   # API 서버 HTTPS
+      - "7788:7788" # Battle 서버
+    environment:
+      # appsettings.json의 연결 문자열을 Docker 내부 네트워크에 맞게 재정의합니다.
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__Mysql=server=mysql;port=3306;database=account_db;user=root;password=1234
+    depends_on:
+      - redis
+      - mysql
+
+  # Redis 서비스
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  # MySQL 서비스
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      # appsettings.json의 연결 문자열과 일치시킵니다.
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: account_db
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+volumes:
+  mysql-data:
