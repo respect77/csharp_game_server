@@ -17,12 +17,12 @@ namespace Server.Battle.Context
     [MemoryPackUnion(9, typeof(PlugConnectClientPacket))]
     [MemoryPackUnion(10, typeof(PlugConnectServerPacket))]
 
-    //[MemoryPackUnion(10, typeof(PlayInputClientNotifyPacket))]
-    [MemoryPackUnion(11, typeof(PlayInputCreateClientNotifyPacket))]
-    [MemoryPackUnion(12, typeof(PlayInputMergeClientNotifyPacket))]
-    [MemoryPackUnion(13, typeof(PlayInputUpgradeClientNotifyPacket))]
+    [MemoryPackUnion(11, typeof(PlayInputClientNotifyPacket))]
+    [MemoryPackUnion(12, typeof(PlayInputCreateClientNotifyPacket))]
+    [MemoryPackUnion(13, typeof(PlayInputMergeClientNotifyPacket))]
+    [MemoryPackUnion(14, typeof(PlayInputUpgradeClientNotifyPacket))]
 
-    [MemoryPackUnion(14, typeof(FrameUpdateServerNotifyPacket))]
+    [MemoryPackUnion(15, typeof(FrameUpdateServerNotifyPacket))]
     public partial interface IBasePacket { }
 
     [MemoryPackable]
