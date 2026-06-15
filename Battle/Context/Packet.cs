@@ -8,27 +8,27 @@ namespace Server.Battle.Context
 
     [MemoryPackUnion(2, typeof(VerifyClientPacket))]
     [MemoryPackUnion(3, typeof(VerifyServerPacket))]
-
     [MemoryPackUnion(4, typeof(HeartBeatClientPacket))]
     [MemoryPackUnion(5, typeof(HeartBeatServerPacket))]
 
     [MemoryPackUnion(6, typeof(ReadyClientNotifyPacket))]
     [MemoryPackUnion(7, typeof(StartServerNotifyPacket))]
-    [MemoryPackUnion(12, typeof(PlayServerNotifyPacket))]
+    [MemoryPackUnion(8, typeof(PlayServerNotifyPacket))]
+    [MemoryPackUnion(9, typeof(PlugConnectClientPacket))]
+    [MemoryPackUnion(10, typeof(PlugConnectServerPacket))]
 
-    [MemoryPackUnion(8, typeof(PlugConnectClientPacket))]
-    [MemoryPackUnion(9, typeof(PlugConnectServerPacket))]
+    //[MemoryPackUnion(10, typeof(PlayInputClientNotifyPacket))]
+    [MemoryPackUnion(11, typeof(PlayInputCreateClientNotifyPacket))]
+    [MemoryPackUnion(12, typeof(PlayInputMergeClientNotifyPacket))]
+    [MemoryPackUnion(13, typeof(PlayInputUpgradeClientNotifyPacket))]
 
-    [MemoryPackUnion(10, typeof(PlayInputClientNotifyPacket))]
-    [MemoryPackUnion(11, typeof(FrameUpdateServerNotifyPacket))]
-
+    [MemoryPackUnion(14, typeof(FrameUpdateServerNotifyPacket))]
     public partial interface IBasePacket { }
 
     [MemoryPackable]
     public partial class PlayerInfo
     {
         public List<(int CardId, int Level)> CardDeck { get; set; } = new();
-        public PlayerInfo() { }
     }
     //배틀 테스트 접속용
     [MemoryPackable]
@@ -36,7 +36,6 @@ namespace Server.Battle.Context
     {
         public int MapId { get; set; }
         public PlayerInfo PlayerInfo { get; set; } = new();
-        public TestPlayClientPacket() { }
     }
 
     [MemoryPackable]
@@ -44,7 +43,6 @@ namespace Server.Battle.Context
     {
         //VerifyClientPacket시 보낼 AccessToken
         public string AccessToken { get; set; } = string.Empty;
-        public TestPlayServerPacket() { }
     }
 
     //인증
@@ -52,7 +50,6 @@ namespace Server.Battle.Context
     public partial class VerifyClientPacket : IBasePacket
     {
         public string AccessToken { get; set; } = string.Empty;
-        public VerifyClientPacket() { }
     }
 
     [MemoryPackable]
@@ -61,40 +58,35 @@ namespace Server.Battle.Context
         public int MapId { get; set; }
         public List<PlayerInfo> PlayerInfos { get; set; } = new();
         //재로그인 시에 이전 프레임 정보도 내려줘야 할듯?
-        public VerifyServerPacket() { }
     }
 
     [MemoryPackable]
     public partial class HeartBeatClientPacket : IBasePacket
     {
-        public HeartBeatClientPacket() { }
     }
 
     [MemoryPackable]
     public partial class HeartBeatServerPacket : IBasePacket
     {
-        public HeartBeatServerPacket() { }
     }
 
     //Verify 이후 로딩완료되어 준비되었을 때
     [MemoryPackable]
     public partial class ReadyClientNotifyPacket : IBasePacket
     {
-        public ReadyClientNotifyPacket() { }
     }
 
     //모든 유저가 Ready되면 게임 시작된다(시작 연출 시작)
     [MemoryPackable]
     public partial class StartServerNotifyPacket : IBasePacket
     {
-        public StartServerNotifyPacket() { }
     }
 
     //연출이 끝나고 플레이 시작을 알림
     [MemoryPackable]
     public partial class PlayServerNotifyPacket : IBasePacket
     {
-        public PlayServerNotifyPacket() { }
+        //이패킷 기준으로 elapsedTime 계산해서 프레임 진행하면 될듯?
     }
 
     //와이파이 <-> lte 등의 이슈로 재연결이 필요할때
@@ -103,16 +95,14 @@ namespace Server.Battle.Context
     {
         public string AccessToken { get; set; } = string.Empty;
         public int LastFrameIndex { get; set; }
-        public PlugConnectClientPacket() { }
     }
 
     [MemoryPackable]
     public partial class PlugConnectServerPacket : IBasePacket
     {
         public List<FrameEventPacketInfo> FrameList { get; set; } = new();
-        public PlugConnectServerPacket() { }
     }
-
+    
     public enum InputTypeEnum
     {
         Create,
@@ -127,7 +117,25 @@ namespace Server.Battle.Context
         public int CreateCardId { get; set; }
         public (int FromPosIndex, int ToPosIndex) MergeInfo { get; set; }
         public int UpgradeCardId { get; set; }
-        public PlayInputClientNotifyPacket() { }
+    }
+    
+    [MemoryPackable]
+    public partial class PlayInputCreateClientNotifyPacket : IBasePacket
+    {
+        public int CreateCardId { get; set; }
+    }
+
+    [MemoryPackable]
+    public partial class PlayInputMergeClientNotifyPacket : IBasePacket
+    {
+        public int FromPosIndex { get; set; }
+        public int ToPosIndex { get; set; } 
+    }
+
+    [MemoryPackable]
+    public partial class PlayInputUpgradeClientNotifyPacket : IBasePacket
+    {
+        public int UpgradeCardId { get; set; }
     }
 
     [MemoryPackable]
@@ -153,7 +161,6 @@ namespace Server.Battle.Context
     public partial class FrameUpdateServerNotifyPacket : IBasePacket
     {
         public FrameEventPacketInfo FrameInfo { get; set; } = new();
-        public FrameUpdateServerNotifyPacket() { }
     }
 
     /*

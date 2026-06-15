@@ -1,40 +1,38 @@
 
 
 USE ACCUNT_DB;
+
 CREATE TABLE account_info_table (
-user_index int NOT NULL AUTO_INCREMENT,
-create_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-account_type tinyint NOT NULL,
-last_login_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-PRIMARY KEY(user_index)
+	user_index int NOT NULL AUTO_INCREMENT,
+	create_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	account_type tinyint NOT NULL,
+	last_login_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY(user_index)
 );
 
 CREATE TABLE social_info_table (
-  social_type tinyint,
-  social_id varchar(64),
-  email varchar(128),
-  user_index int,
-  PRIMARY KEY(social_type, social_id),
-  KEY (user_index)
+	social_type tinyint,
+	social_id varchar(64),
+	email varchar(128),
+	user_index int,
+	PRIMARY KEY(social_type, social_id),
+	KEY (user_index)
 );
 
 CREATE TABLE push_token_info_table (
-  push_token varchar(128),
-  os_type tinyint,
-  user_index int,
-  PRIMARY KEY(push_token, os_type),
-  KEY (user_index)
+	push_token varchar(128),
+	os_type tinyint,
+	user_index int,
+	PRIMARY KEY(push_token, os_type),
+	KEY (user_index)
 );
 
 CREATE TABLE daily_login_user_table (
-  login_datetime DATE NOT NULL,
-  user_index int NOT NULL,
-  PRIMARY KEY (user_index,login_datetime),
-  KEY (login_datetime)
+	login_datetime DATE NOT NULL,
+	user_index int NOT NULL,
+	PRIMARY KEY (user_index,login_datetime),
+	KEY (login_datetime)
 );
-
-#SELECT CURDATE();
-
 
 
 DROP procedure IF EXISTS `sp_login`;
@@ -75,8 +73,47 @@ proc : BEGIN
 	START TRANSACTION;
 
     # 여기서부터 시작
-	CASE p_social_type
-	WHEN 1 THEN -- Guest
+	IF p_social_type = 1 AND (p_social_id IS NULL or p_social_id = "")THEN
+		#게스트 계정 생성 요청
+		create_loop :LOOP 
+			SET @BASE = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+			SET @GUEST_ID = '';
+			
+			SET @GUEST_ID_SIZE = 10;
+			SET @i = 0;
+
+			create_inner_loop :LOOP 
+			   IF (@GUEST_ID_SIZE <= @i) THEN
+				  LEAVE create_inner_loop;
+			   END IF;  
+			   SET @i = @i + 1;
+			   SET @GUEST_ID = CONCAT(@GUEST_ID, substring(@BASE, CEIL(RAND() * CHAR_LENGTH(@BASE)), 1));
+			END LOOP;
+            
+            IF NOT EXISTS (SELECT * FROM account_social_info_table WHERE social_type = p_social_type AND social_user_id = @GUEST_ID FOR UPDATE) THEN
+				SET p_social_id = @GUEST_ID;
+                
+                INSERT account_info_table VALUE ();
+    
+				INSERT account_social_info_table(user_index, social_type, social_user_id, social_email)
+				VALUE (LAST_INSERT_ID(), p_social_type, p_social_id, p_email);
+        
+				LEAVE create_loop;
+            END IF;
+		END LOOP;
+	END IF;
+    
+	IF p_social_type != 1 AND NOT EXISTS (SELECT * FROM account_social_info_table WHERE social_type = p_social_type AND social_user_id = p_social_id) THEN
+		INSERT account_info_table VALUE ();
+    
+		INSERT account_social_info_table(user_index, social_type, social_user_id, social_email)
+        VALUE (LAST_INSERT_ID(), p_social_type, p_social_id, p_email);
+    END IF;
+
+	SELECT A.user_index, account_type, last_login_datetime, social_user_id, login_count
+    INTO @user_index, @account_type, @last_login_datetime, @social_user_id, @login_count
+    FROM account_info_table AS A INNER JOIN account_social_info_table AS B ON A.user_index = B.user_index
+    WHERE social_type = in_social_type AND social_user_id = in_social_user_id FOR UPDATE;
 
     SET user_index = 1;
 

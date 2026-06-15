@@ -8,7 +8,6 @@ namespace Server.Battle.Context
     public interface IRoomManager
     {
         void SendPacket(IBasePacket packet, params int[] clientIds);
-        void OnRoomClosed(int roomNo);
     }
 
     public class RoomManager : IRoomManager
@@ -42,15 +41,18 @@ namespace Server.Battle.Context
 
         public void OnRoomClosed(int roomNo)
         {
-            if (_rooms.TryRemove(roomNo, out var room))
+            if (!_rooms.TryRemove(roomNo, out var room))
             {
-                foreach (var player in room.GetPlayerList())
-                {
-                    _accessTokens.TryRemove(player.GameInfo.AccessToken, out var _);
-                }
-                room.Close();
-                _logger.Info("Room {RoomNo} Closed.", roomNo);
+                return;
             }
+
+            foreach (var player in room.GetPlayerList())
+            {
+                _accessTokens.TryRemove(player.GameInfo.AccessToken, out var _);
+            }
+
+            room.Close();
+            _logger.Info("Room {RoomNo} Closed.", roomNo);
         }
     }
 }

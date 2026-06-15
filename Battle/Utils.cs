@@ -1,4 +1,5 @@
 using Microsoft.Extensions.ObjectPool;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
 namespace Server.Battle
@@ -94,15 +95,6 @@ namespace Server.Battle
             }
         }
 
-        public static Vector2 Normalized(Vector2 v)
-        {
-            float length = (float)Math.Sqrt(v.X * v.X + v.Y * v.Y);
-            if (length == 0f)
-                return Zero;
-            return v / length;
-        }
-
-
         public static Vector2 Zero => new();
 
         public override int GetHashCode()
@@ -127,30 +119,23 @@ namespace Server.Battle
         public static float DistanceSq(Vector2 v1, Vector2 v2) => (v1 - v2).LengthSquared;
     }
 
-    public class CustomObjectPool<T> where T : class, ICustomObjectPoolable, new()
+    public static class CustomObjectPool<T> where T : class, ICustomObjectPoolable, new()
     {
-        private static readonly Lazy<CustomObjectPool<T>> _instance = new(() => new CustomObjectPool<T>());
-        private readonly ObjectPool<T> _pool;
+        private static readonly ConcurrentQueue<T> _queue = new();
 
-        private CustomObjectPool()
+        public static T Get()
         {
-            var provider = new DefaultObjectPoolProvider { MaximumRetained = 2048 };
-            _pool = provider.Create<T>();
+            if (_queue.TryDequeue(out var item))
+            {
+                return item;
+            }
+            return new T();
         }
 
-        public static CustomObjectPool<T> Instance => _instance.Value;
-
-        public static T Get() => Instance._pool.Get();
-
-        public static void Dispose(T obj)
+        public static void Dispose(T item)
         {
-            if (obj == null)
-            {
-                return;
-            }
-
-            obj.Dispose();
-            Instance._pool.Return(obj);
+            item.Dispose();
+            _queue.Enqueue(item);
         }
     }
     public static class CustomObjectPool

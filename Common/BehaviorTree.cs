@@ -102,6 +102,76 @@ namespace Server.Common
         }
     }
 
+    public abstract class DecoratorBase : BehaviorTreeNode
+    {
+        protected readonly BehaviorTreeNode _child;
+
+        protected DecoratorBase(BehaviorTreeNode child)
+        {
+            _child = child;
+        }
+    }
+
+    public class InverterDecoratorNode : DecoratorBase
+    {
+        public InverterDecoratorNode(BehaviorTreeNode child) : base(child)
+        {
+        }
+
+        public override TaskStatus Tick()
+        {
+            var state = _child.Tick();
+
+            return state switch
+            {
+                TaskStatus.Success => TaskStatus.Failure,
+                TaskStatus.Failure => TaskStatus.Success,
+                TaskStatus.Continue => TaskStatus.Continue,
+                _ => throw new InvalidOperationException($"Unexpected TaskStatus: {state}")
+            };
+        }
+    }
+
+    public class RepeaterDecoratorNode : DecoratorBase
+    {
+        private readonly int _repeatCount;
+        private int _completed;
+
+        public RepeaterDecoratorNode(int count, BehaviorTreeNode child): base(child)
+        {
+            _repeatCount = count;
+        }
+
+        public override TaskStatus Tick()
+        {
+            var state = _child.Tick();
+
+            // 자식이 아직 진행 중이면 그대로 대기
+            if (state == TaskStatus.Continue)
+            {
+                return TaskStatus.Continue;
+            }
+
+            // 실패하면 즉시 종료 (정책에 따라 무시하고 카운트만 올려도 됨)
+            if (state == TaskStatus.Failure)
+            {
+                _completed = 0;
+                return TaskStatus.Failure;
+            }
+
+            // Success: 1회 완료
+            _completed++;
+            if (_repeatCount <= _completed)
+            {
+                _completed = 0;
+                return TaskStatus.Success;
+            }
+
+            // 아직 더 반복해야 함 → 다음 Tick에서 자식을 다시 실행
+            return TaskStatus.Continue;
+        }
+    }
+
     public static class CreateBehaviorTreeNode
     {
         /*

@@ -110,7 +110,6 @@ namespace Server.Battle.Context
             RoomState = RoomStateEnum.Closed;
             _requestChannel.Writer.Complete();
             _channelCts.Cancel();
-            _roomManager.OnRoomClosed(_roomNo);
             _loggerFactory.Dispose();   // dispose: true → 내부 Serilog Logger 도 같이 종료
         }
 

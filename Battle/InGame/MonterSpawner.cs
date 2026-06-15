@@ -16,6 +16,7 @@ namespace Server.Battle.InGame
             _remainSpawnSec -= Utils.FrameDeltaTime;
             if (_remainSpawnSec <= 0f)
             {
+                //TODO 특정 유저에게만 스폰 시켜야 하는 경우도 있음
                 _createMonsterFunc(1);
                 _remainSpawnSec = _spawnIntervalSec;
             }

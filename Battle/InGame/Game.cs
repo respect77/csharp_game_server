@@ -214,19 +214,10 @@ namespace Server.Battle.InGame
             {
                 //여기서 moster 맞고 삭제 처리
                 projectile.Update();
-                if (projectile.IsDestroyed)
-                {
-                    CustomObjectPool.Dispose(projectile);
-                }
             }
-            _projectiles.RemoveAll(p => p.IsDestroyed);
 
-            foreach (var monster in _monsters.Where(m => m.IsDestroyed))
-            {
-                CustomObjectPool.Dispose(monster);
-            }
-            _monsters.RemoveAll(m => m.IsDestroyed);
-
+            _projectiles.RemoveAll(DisposeIfDestroyed);
+            _monsters.RemoveAll(DisposeIfDestroyed);
 
             //게임 종료 체크
 
@@ -246,6 +237,7 @@ namespace Server.Battle.InGame
                 _roomLogger.Error("Game Merge Invalid FromObjectId: {FromObjectId}", mergeInfo.FromObjectId);
                 return false;
             }
+
             if (!characterDict.TryGetValue(mergeInfo.ToObjectId, out var toCharacter))
             {
                 _roomLogger.Error("Game Merge Invalid ToObjectId: {ToObjectId}", mergeInfo.ToObjectId);
@@ -254,8 +246,28 @@ namespace Server.Battle.InGame
             //TODO merge logic
             return true;
         }
+
+        static bool DisposeIfDestroyed<T>(T obj) where T : InGameObject, new()
+        {
+            if (obj.IsDestroyed)
+            {
+                CustomObjectPool.Dispose(obj);
+                return true;
+            }
+            return false;
+        }
+
+
         public void Close()
         {
+            _projectiles.ForEach(CustomObjectPool.Dispose);
+            _projectiles.Clear();
+
+            _monsters.ForEach(CustomObjectPool.Dispose);
+            _monsters.Clear();
+
+            _characters.Values.ToList().ForEach(charDic => charDic.Values.ToList().ForEach(CustomObjectPool.Dispose));
+            _characters.Clear();
         }
     }
 }
